@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     if (type === "food") {
       const msg = await client.messages.create({
-        model: "claude-haiku-20240307",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 256,
         messages: [{
           role: "user",
@@ -29,7 +29,7 @@ Schätze realistische Werte. Alle Zahlen als Integer.`
       const prot = meals.reduce((s, m) => s + (m.protein || 0), 0)
 
       const msg = await client.messages.create({
-        model: "claude-haiku-20240307",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 400,
         messages: [{
           role: "user",
@@ -51,7 +51,7 @@ Kein Smalltalk, direkt zum Punkt.`
     } else if (type === "gym") {
       const { exercises, day } = data
       const msg = await client.messages.create({
-        model: "claude-haiku-20240307",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 200,
         messages: [{
           role: "user",
@@ -65,7 +65,7 @@ Gib einen konkreten Tipp in 2 Sätzen auf Deutsch.`
     } else if (type === "mail-summary") {
       const { messages } = data
       const msg = await client.messages.create({
-        model: "claude-haiku-20240307",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 300,
         messages: [{
           role: "user",
