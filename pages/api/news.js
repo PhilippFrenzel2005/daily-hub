@@ -1,28 +1,64 @@
+const FEEDS = [
+  { url: "https://www.tagesschau.de/xml/rss2/", source: "Tagesschau" },
+  { url: "https://www.spiegel.de/schlagzeilen/index.rss", source: "Spiegel" },
+  { url: "https://www.derstandard.at/rss", source: "Standard" },
+  { url: "https://www.heise.de/rss/heise-atom.xml", source: "Heise" },
+]
+
+function decode(str) {
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#\d+;/g, "")
+    .trim()
+}
+
+function parseItems(xml, source) {
+  const isAtom = xml.includes("<feed")
+  const itemRe = isAtom ? /<entry>([\s\S]*?)<\/entry>/g : /<item>([\s\S]*?)<\/item>/g
+
+  return [...xml.matchAll(itemRe)].map((m) => {
+    const block = m[1]
+    const get = (tag) => {
+      const m = block.match(
+        new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`)
+      )
+      return m ? decode(m[1].replace(/<[^>]*>/g, "")) : ""
+    }
+    const getAttr = (tag, attr) => {
+      const m = block.match(new RegExp(`<${tag}[^>]*${attr}="([^"]*)"[^>]*/?>`))
+      return m ? m[1] : ""
+    }
+    return {
+      title: get("title"),
+      description: get(isAtom ? "summary" : "description").slice(0, 220),
+      date: get(isAtom ? "updated" : "pubDate"),
+      link: isAtom ? getAttr("link", "href") : (get("link") || get("guid")),
+      source,
+    }
+  }).filter((i) => i.title)
+}
+
 export default async function handler(req, res) {
   try {
-    const r = await fetch("https://www.tagesschau.de/xml/rss2/", {
-      headers: { "User-Agent": "Mozilla/5.0" },
-    })
-    const xml = await r.text()
+    const results = await Promise.allSettled(
+      FEEDS.map(({ url, source }) =>
+        fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } })
+          .then((r) => r.text())
+          .then((xml) => parseItems(xml, source))
+      )
+    )
 
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)]
-      .map((m) => {
-        const block = m[1]
-        const get = (tag) => {
-          const match = block.match(
-            new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`)
-          )
-          return match ? match[1].trim() : ""
-        }
-        return {
-          title: get("title"),
-          description: get("description").replace(/<[^>]*>/g, "").slice(0, 220),
-          date: get("pubDate"),
-          link: get("link") || get("guid"),
-        }
-      })
-      .filter((i) => i.title)
-      .slice(0, 15)
+    const items = results
+      .filter((r) => r.status === "fulfilled")
+      .flatMap((r) => r.value)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 25)
 
     res.setHeader("Cache-Control", "s-maxage=300")
     res.json({ items })

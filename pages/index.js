@@ -525,7 +525,7 @@ export default function Home() {
                 <div style={{fontSize:14,color:"#f0eff4",lineHeight:1.4,marginBottom:4}}>{item.title}</div>
                 {item.description && <div style={{fontSize:12,color:"#5a5968",lineHeight:1.5,marginBottom:4}}>{item.description}</div>}
                 <div style={{fontSize:11,color:"#3a3a40"}}>
-                  {item.date ? new Date(item.date).toLocaleDateString("de-AT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : ""} · Tagesschau
+                  {item.date ? new Date(item.date).toLocaleDateString("de-AT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : ""} · {item.source}
                 </div>
               </a>
             ))}
