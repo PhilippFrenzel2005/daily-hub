@@ -67,6 +67,7 @@ function Icon({ name, size=24, color="currentColor", sw=1.7 }) {
     sync:     <><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></>,
     x:        <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
     signout:  <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
+    news:     <><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></>,
   }
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -157,6 +158,8 @@ export default function Home() {
   const [mailSummary, setMailSummary] = useState("")
   const [gymTip, setGymTip]         = useState("")
   const [unreadCount, setUnreadCount] = useState(0)
+  const [news, setNews]               = useState([])
+  const [newsLoading, setNewsLoading] = useState(false)
 
   const TODAY    = new Date().toDateString()
   const todayIdx = (new Date().getDay() + 6) % 7
@@ -228,6 +231,15 @@ export default function Home() {
       setBriefing(d.text || "")
     } catch {}
     setAiLoading(l=>({...l,briefing:false}))
+  }
+
+  const fetchNews = async () => {
+    setNewsLoading(true)
+    try {
+      const d = await fetch("/api/news").then(r=>r.json())
+      setNews(d.items || [])
+    } catch {}
+    setNewsLoading(false)
   }
 
   const loadGymTip = async () => {
@@ -923,6 +935,60 @@ export default function Home() {
             ))}
           </div>
         )}
+
+        {/* ═══════════════ NEWS ══════════════════════════════════════════════ */}
+        {tab==="news" && (
+          <div style={{animation:"fadeSlideIn .28s ease"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+              <h1 style={{fontSize:30,fontWeight:800,color:"#211D17"}}>Nachrichten</h1>
+              <button onClick={fetchNews} style={{background:"none",border:"1px solid rgba(33,29,23,0.08)",
+                borderRadius:14,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",
+                gap:4,fontSize:12,color:"#8B8275"}}>
+                <Icon name="refresh" size={14} color="#8B8275" sw={1.7}/>
+                {newsLoading ? "Lädt…" : "Aktualisieren"}
+              </button>
+            </div>
+
+            {newsLoading && (
+              <div style={card}>
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {[88,72,80,65,90].map((w,i)=>(
+                    <div key={i} style={{height:14,borderRadius:6,width:`${w}%`,
+                      background:"linear-gradient(90deg,#e8e4dc 25%,#f2eee6 50%,#e8e4dc 75%)",
+                      backgroundSize:"200% 100%",animation:"shimmer 1.5s ease infinite"}}/>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!newsLoading && news.length===0 && (
+              <div style={{textAlign:"center",padding:"40px 0",color:"#B6AEA0",fontSize:13}}>
+                Klicke "Aktualisieren" für aktuelle Nachrichten.
+              </div>
+            )}
+
+            {news.map((item,i)=>(
+              <a key={i} href={item.link} target="_blank" rel="noopener noreferrer"
+                style={{...card,display:"block",textDecoration:"none",marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:6}}>
+                  <span style={{fontSize:10.5,fontWeight:700,color:A,textTransform:"uppercase",
+                    letterSpacing:"0.06em",flexShrink:0}}>{item.source}</span>
+                  <span style={{fontSize:11,color:"#B6AEA0",flexShrink:0}}>
+                    {item.date ? new Date(item.date).toLocaleDateString("de-AT",{day:"numeric",month:"short"}) : ""}
+                  </span>
+                </div>
+                <div style={{fontSize:15,fontWeight:600,color:"#211D17",lineHeight:1.4,marginBottom:4}}>
+                  {item.title}
+                </div>
+                {item.description && (
+                  <div style={{fontSize:12.5,color:"#8B8275",lineHeight:1.5}}>
+                    {item.description}
+                  </div>
+                )}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ═══════════════ BOTTOM NAV ═════════════════════════════════════════ */}
@@ -936,16 +1002,17 @@ export default function Home() {
         zIndex:100,paddingBottom:"env(safe-area-inset-bottom,0px)",
       }}>
         {[
-          ["home",  "home",  "Home"],
-          ["essen", "food",  "Essen"],
-          ["gym",   "gym",   "Gym"],
-          ["aufgaben","tasks","Aufgaben"],
-          ["mail",  "mail",  "Mail"],
+          ["home",  "home",   "Home"],
+          ["essen", "food",   "Essen"],
+          ["gym",   "gym",    "Gym"],
+          ["aufgaben","tasks","Tasks"],
+          ["mail",  "mail",   "Mail"],
+          ["news",  "news",   "News"],
         ].map(([id,icon,label])=>{
           const active = tab===id
           const badge  = id==="mail" && unreadCount>0 ? unreadCount : 0
           return (
-            <button key={id} onClick={()=>{ setTab(id); if(id==="mail"&&!emails.length&&!mailSummary) fetchMail() }}
+            <button key={id} onClick={()=>{ setTab(id); if(id==="news"&&!news.length) fetchNews() }}
               style={{background:"none",border:"none",cursor:"pointer",flex:1,
                 display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                 gap:2,padding:"8px 4px",position:"relative",minHeight:58}}>
