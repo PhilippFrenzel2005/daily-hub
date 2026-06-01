@@ -28,6 +28,8 @@ export default function Home() {
   const [mailSummary, setMailSummary] = useState("")
   const [gymTip, setGymTip] = useState("")
   const [unreadCount, setUnreadCount] = useState(0)
+  const [news, setNews] = useState([])
+  const [newsLoading, setNewsLoading] = useState(false)
   const TODAY = new Date().toDateString()
 
   useEffect(() => {
@@ -87,6 +89,16 @@ export default function Home() {
       }
     } catch(e) {}
     setAiLoading(l => ({...l, mail: false}))
+  }
+
+  const fetchNews = async () => {
+    setNewsLoading(true)
+    try {
+      const r = await fetch("/api/news")
+      const d = await r.json()
+      setNews(d.items || [])
+    } catch(e) {}
+    setNewsLoading(false)
   }
 
   const logFood = async () => {
@@ -154,6 +166,17 @@ export default function Home() {
     carb: meals.reduce((s,m) => s+(m.carbs||0),0),
     fat:  meals.reduce((s,m) => s+(m.fat||0),0),
   })
+
+  const QUICK_FOODS = [
+    { name: "Protein Shake", kcal: 130, protein: 25, carbs: 5, fat: 2 },
+    { name: "Haferflocken 80g", kcal: 295, protein: 10, carbs: 52, fat: 5 },
+    { name: "Hühnerbrust 150g", kcal: 165, protein: 31, carbs: 0, fat: 4 },
+    { name: "2 Eier", kcal: 144, protein: 12, carbs: 1, fat: 10 },
+    { name: "Banane", kcal: 89, protein: 1, carbs: 23, fat: 0 },
+    { name: "Vollkornbrot", kcal: 200, protein: 8, carbs: 36, fat: 2 },
+    { name: "Magerquark 250g", kcal: 130, protein: 27, carbs: 5, fat: 1 },
+    { name: "Reis 100g", kcal: 350, protein: 7, carbs: 77, fat: 1 },
+  ]
 
   const t = totals()
   const today = (new Date().getDay()+6)%7
@@ -230,8 +253,8 @@ export default function Home() {
       <div style={s.page}>
         {/* NAV */}
         <nav style={s.nav}>
-          {[["home","◈ Home"],["todos",`☐ Todos${openTodos.length>0?" ("+openTodos.length+")":""}`],["food","◉ Essen"],["gym","⊕ Gym"],["mail",`✉ Mail${unreadCount>0?" ("+unreadCount+")":""}`]].map(([id,label])=>(
-            <button key={id} style={s.navBtn(tab===id)} onClick={()=>{ setTab(id); if(id==="mail"&&!emails.length) fetchMail() }}>{label}</button>
+          {[["home","◈ Home"],["todos",`☐ Todos${openTodos.length>0?" ("+openTodos.length+")":""}`],["food","◉ Essen"],["gym","⊕ Gym"],["mail",`✉ Mail${unreadCount>0?" ("+unreadCount+")":""}`],["news","◎ News"]].map(([id,label])=>(
+            <button key={id} style={s.navBtn(tab===id)} onClick={()=>{ setTab(id); if(id==="mail"&&!emails.length) fetchMail(); if(id==="news"&&!news.length) fetchNews() }}>{label}</button>
           ))}
           <button style={{...s.navBtn(false), marginLeft:"auto"}} onClick={()=>signOut({callbackUrl:"/login"})}>↪</button>
         </nav>
@@ -385,6 +408,16 @@ export default function Home() {
               ))}
             </div>
 
+            <div style={s.sHead}><span style={s.sTitle}>Schnell hinzufügen</span></div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+              {QUICK_FOODS.map(f=>(
+                <button key={f.name} style={{...s.btn(),fontSize:11,padding:"6px 10px"}} onClick={()=>{
+                  const now = new Date()
+                  setMeals(m=>[...m,{...f,time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,"0")}`,id:Date.now()}])
+                }}>{f.name}</button>
+              ))}
+            </div>
+
             <div style={s.sHead}><span style={s.sTitle}>Mahlzeiten</span></div>
             <div style={s.row}>
               <input style={{...s.input,flex:1}} value={foodInput} onChange={e=>setFoodInput(e.target.value)} placeholder="z.B. 3 Eier, Haferflocken 80g..." onKeyDown={e=>e.key==="Enter"&&logFood()} />
@@ -478,6 +511,27 @@ export default function Home() {
             ))}
           </div>
         )}
+        {/* NEWS */}
+        {tab==="news" && (
+          <div style={s.section}>
+            <div style={s.sHead}>
+              <span style={s.sTitle}>Nachrichten</span>
+              <button style={s.btn("blue")} onClick={fetchNews}>{newsLoading?"⏳ Lädt...":"↻ Aktualisieren"}</button>
+            </div>
+            {newsLoading && <div style={{textAlign:"center",padding:"24px 0",color:"#5a5968",fontSize:13}}>Lädt Nachrichten...</div>}
+            {!newsLoading && news.length===0 && <div style={{textAlign:"center",padding:"24px 0",color:"#5a5968",fontSize:13}}>Klicke "Aktualisieren" für aktuelle News.</div>}
+            {news.map((item,i)=>(
+              <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",padding:"12px 0",borderBottom:"1px solid #2e2e33"}}>
+                <div style={{fontSize:14,color:"#f0eff4",lineHeight:1.4,marginBottom:4}}>{item.title}</div>
+                {item.description && <div style={{fontSize:12,color:"#5a5968",lineHeight:1.5,marginBottom:4}}>{item.description}</div>}
+                <div style={{fontSize:11,color:"#3a3a40"}}>
+                  {item.date ? new Date(item.date).toLocaleDateString("de-AT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : ""} · Tagesschau
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+
       </div>
     </>
   )
