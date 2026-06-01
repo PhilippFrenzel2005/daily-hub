@@ -4,8 +4,8 @@
   "description": "Dein persönlicher Fitness & Produktivitäts-Assistent",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0e0e0f",
-  "theme_color": "#0e0e0f",
+  "background_color": "#F2EEE6",
+  "theme_color": "#F2EEE6",
   "orientation": "portrait",
   "icons": [
     {

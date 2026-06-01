@@ -6,9 +6,9 @@ export default function Document() {
       <Head>
         <meta name="application-name" content="Daily Hub" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Daily Hub" />
-        <meta name="theme-color" content="#0e0e0f" />
+        <meta name="theme-color" content="#F2EEE6" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </Head>
