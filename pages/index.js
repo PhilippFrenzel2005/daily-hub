@@ -184,6 +184,7 @@ export default function Home() {
   const [mailError, setMailError]     = useState("")
   const [news, setNews]               = useState([])
   const [newsLoading, setNewsLoading] = useState(false)
+  const [newsSummary, setNewsSummary] = useState("")
 
   const TODAY    = new Date().toDateString()
   const todayIdx = (new Date().getDay() + 6) % 7
@@ -262,7 +263,7 @@ export default function Home() {
     setAiLoading(l=>({...l,briefing:true}))
     try {
       const d = await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({type:"briefing",data:{meals,exercises,tasks:todos,events,water}})}).then(r=>r.json())
+        body:JSON.stringify({type:"briefing",data:{tasks:todos,events}})}).then(r=>r.json())
       setBriefing(d.text || "")
     } catch {}
     setAiLoading(l=>({...l,briefing:false}))
@@ -270,9 +271,16 @@ export default function Home() {
 
   const fetchNews = async () => {
     setNewsLoading(true)
+    setNewsSummary("")
     try {
       const d = await fetch("/api/news").then(r=>r.json())
-      setNews(d.items || [])
+      const items = d.items || []
+      setNews(items)
+      if (items.length) {
+        const ai = await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({type:"news-summary",data:{items}})}).then(r=>r.json())
+        setNewsSummary(ai.text || "")
+      }
     } catch {}
     setNewsLoading(false)
   }
@@ -997,13 +1005,31 @@ export default function Home() {
             </div>
 
             {newsLoading && (
-              <div style={card}>
-                <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                  {[88,72,80,65,90].map((w,i)=>(
-                    <div key={i} style={{height:14,borderRadius:6,width:`${w}%`,
+              <div style={{...card,padding:0,overflow:"hidden"}}>
+                <div style={{background:AS,borderBottom:"1px solid rgba(33,29,23,0.08)",
+                  padding:"12px 16px",display:"flex",alignItems:"center",gap:6}}>
+                  <Icon name="sparkle" size={14} color={A} sw={2}/>
+                  <span style={{fontSize:13,fontWeight:700,color:A}}>KI-Zusammenfassung</span>
+                </div>
+                <div style={{padding:16,display:"flex",flexDirection:"column",gap:10}}>
+                  {[88,72,80].map((w,i)=>(
+                    <div key={i} style={{height:13,borderRadius:6,width:`${w}%`,
                       background:"linear-gradient(90deg,#e8e4dc 25%,#f2eee6 50%,#e8e4dc 75%)",
                       backgroundSize:"200% 100%",animation:"shimmer 1.5s ease infinite"}}/>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {newsSummary && !newsLoading && (
+              <div style={{...card,padding:0,overflow:"hidden"}}>
+                <div style={{background:AS,borderBottom:"1px solid rgba(33,29,23,0.08)",
+                  padding:"12px 16px",display:"flex",alignItems:"center",gap:6}}>
+                  <Icon name="sparkle" size={14} color={A} sw={2}/>
+                  <span style={{fontSize:13,fontWeight:700,color:A}}>KI-Zusammenfassung</span>
+                </div>
+                <div style={{padding:16}}>
+                  <p style={{fontSize:14,color:"#211D17",lineHeight:1.6}}>{newsSummary}</p>
                 </div>
               </div>
             )}

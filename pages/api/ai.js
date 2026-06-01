@@ -24,26 +24,23 @@ Schätze realistische Werte. Alle Zahlen als Integer.`
       res.json(JSON.parse(text))
 
     } else if (type === "briefing") {
-      const { meals, exercises, tasks, events, water } = data
-      const kcal = meals.reduce((s, m) => s + (m.kcal || 0), 0)
-      const prot = meals.reduce((s, m) => s + (m.protein || 0), 0)
+      const { tasks, events } = data
+      const open = (tasks || []).filter(t => !t.done && !t.completed)
+      const eventList = (events || []).map(e => e.title).join(", ") || "keine"
+      const todoList  = open.slice(0, 5).map(t => t.text || t.title).join(", ") || "keine"
 
       const msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 400,
+        max_tokens: 180,
         messages: [{
           role: "user",
-          content: `Du bist ein persönlicher Assistent. Erstelle ein kurzes Morgen-Briefing auf Deutsch (max 4 Sätze, direkt und motivierend).
+          content: `Tages-Briefing auf Deutsch. Maximal 2 kurze Sätze. Professionell, prägnant, kein Smalltalk.
+Nenne was heute ansteht (Termine und Aufgaben), nicht Fitness oder Ernährung.
 
-Heute:
-- Kalorien: ${kcal} von 3200 kcal
-- Protein: ${Math.round(prot)}g von 200g  
-- Wasser: ${water.toFixed(1)}L von 3.5L
-- Workout: ${exercises.length ? exercises.map(e => e.name).join(", ") : "noch keins"}
-- Offene Todos: ${tasks.filter(t => !t.completed).length}
-- Termine heute: ${events.length ? events.map(e => e.title).join(", ") : "keine"}
+Offene Aufgaben: ${todoList}
+Heutige Termine: ${eventList}
 
-Kein Smalltalk, direkt zum Punkt.`
+Antworte direkt mit dem Briefing-Text, ohne Einleitung.`
         }]
       })
       res.json({ text: msg.content[0].text })
@@ -58,6 +55,21 @@ Kein Smalltalk, direkt zum Punkt.`
           content: `Push/Pull/Legs Split, Muskelaufbau. Heute: ${day}-Tag. 
 Bisherige Übungen: ${exercises.length ? exercises.map(e => `${e.name} ${e.detail}`).join(", ") : "keine"}.
 Gib einen konkreten Tipp in 2 Sätzen auf Deutsch.`
+        }]
+      })
+      res.json({ text: msg.content[0].text })
+
+    } else if (type === "news-summary") {
+      const { items } = data
+      const headlines = items.slice(0, 12).map(i => i.title).join(" · ")
+      const msg = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 180,
+        messages: [{
+          role: "user",
+          content: `Fasse diese Nachrichten-Schlagzeilen in 2 prägnanten Sätzen auf Deutsch zusammen. Was sind die wichtigsten Themen gerade? Journalistisch, neutral, direkt.
+
+Schlagzeilen: ${headlines}`
         }]
       })
       res.json({ text: msg.content[0].text })
