@@ -3,36 +3,58 @@ import { useRouter } from "next/router"
 import { useState, useEffect } from "react"
 import Head from "next/head"
 
-const KCAL_GOAL = 3200, PROT_GOAL = 200, CARB_GOAL = 400, FAT_GOAL = 90, WATER_GOAL = 3.5
+const KCAL_GOAL = 2300, PROT_GOAL = 180, CARB_GOAL = 250, FAT_GOAL = 75, WATER_GOAL = 3.0
 const A = "#557A53"   // accent
 const AS = "#EBF0EB"  // accent-soft
 
-const GYM_PLAN = ["Push","Pull","Beine","Rest","Push","Pull","Rest"]
+const GYM_PLAN  = ["Push A","Pull A","Legs","Rest","Push B","Pull B","Rest"]
+const GYM_SHORT = {"Push A":"PA","Pull A":"LA","Legs":"Leg","Rest":"—","Push B":"PB","Pull B":"LB"}
 
 const DEFAULT_EXERCISES = {
-  Push: [
-    { name:"Bankdrücken",      detail:"4 × 8 · 80 kg",  setsTotal:4 },
-    { name:"Schrägbank KH",    detail:"3 × 10 · 28 kg", setsTotal:3 },
-    { name:"Schulterdrücken",  detail:"3 × 10 · 22 kg", setsTotal:3 },
-    { name:"Seitheben",        detail:"3 × 15 · 12 kg", setsTotal:3 },
-    { name:"Trizeps Pushdown", detail:"3 × 12 · 30 kg", setsTotal:3 },
-    { name:"Dips",             detail:"3 × max",          setsTotal:3 },
+  "Push A": [
+    { name:"Bankdrücken",                  detail:"4 × 5–8",    setsTotal:4 },
+    { name:"Schrägbank KH",                detail:"3 × 8–10",   setsTotal:3 },
+    { name:"Schulterdrücken Maschine/KH",  detail:"3 × 6–10",   setsTotal:3 },
+    { name:"Kabel-Flys / Pec Deck",        detail:"3 × 12–15",  setsTotal:3 },
+    { name:"Seitheben",                    detail:"4 × 12–20",  setsTotal:4 },
+    { name:"Trizepsdrücken Kabel",         detail:"3 × 10–15",  setsTotal:3 },
+    { name:"Overhead-Trizepsstrecken",     detail:"2 × 12–15",  setsTotal:2 },
   ],
-  Pull: [
-    { name:"Klimmzüge",        detail:"4 × 8",            setsTotal:4 },
-    { name:"Kabelrudern",      detail:"3 × 12 · 60 kg",   setsTotal:3 },
-    { name:"Lat-Zug",          detail:"3 × 12 · 55 kg",   setsTotal:3 },
-    { name:"Bizeps Curls",     detail:"3 × 12 · 15 kg",   setsTotal:3 },
-    { name:"Face Pulls",       detail:"3 × 15 · 20 kg",   setsTotal:3 },
-    { name:"Hammer Curls",     detail:"3 × 10 · 14 kg",   setsTotal:3 },
+  "Pull A": [
+    { name:"Klimmzüge / Latzug breit",     detail:"4 × 6–10",   setsTotal:4 },
+    { name:"Rudern LH / T-Bar",            detail:"4 × 6–10",   setsTotal:4 },
+    { name:"Kabelrudern neutral",           detail:"3 × 8–12",   setsTotal:3 },
+    { name:"Reverse Flys",                  detail:"3 × 12–20",  setsTotal:3 },
+    { name:"Face Pulls",                    detail:"2 × 15–20",  setsTotal:2 },
+    { name:"Langhantelcurls",               detail:"3 × 8–12",   setsTotal:3 },
+    { name:"Hammercurls",                   detail:"2 × 10–15",  setsTotal:2 },
   ],
-  Beine: [
-    { name:"Kniebeugen",       detail:"4 × 8 · 100 kg",   setsTotal:4 },
-    { name:"Beinpresse",       detail:"3 × 12 · 140 kg",  setsTotal:3 },
-    { name:"Beinstrecker",     detail:"3 × 15 · 45 kg",   setsTotal:3 },
-    { name:"Leg Curl",         detail:"3 × 12 · 40 kg",   setsTotal:3 },
-    { name:"Wadenheben",       detail:"4 × 15 · 60 kg",   setsTotal:4 },
-    { name:"Hip Thrust",       detail:"3 × 12 · 80 kg",   setsTotal:3 },
+  "Legs": [
+    { name:"Kniebeuge / Beinpresse",        detail:"4 × 6–10",   setsTotal:4 },
+    { name:"Rumänisches Kreuzheben",        detail:"3 × 8–10",   setsTotal:3 },
+    { name:"Beinstrecker",                  detail:"3 × 10–15",  setsTotal:3 },
+    { name:"Beinbeuger",                    detail:"3 × 10–15",  setsTotal:3 },
+    { name:"Bulgarian Split Squats",        detail:"2 × 8–12/Bein", setsTotal:2 },
+    { name:"Wadenheben",                    detail:"4 × 10–20",  setsTotal:4 },
+    { name:"Hanging Leg Raises / Crunches", detail:"3 × 10–15",  setsTotal:3 },
+  ],
+  "Push B": [
+    { name:"Schrägbankdrücken Maschine/LH",detail:"4 × 8–10",   setsTotal:4 },
+    { name:"Brustpresse",                   detail:"3 × 8–12",   setsTotal:3 },
+    { name:"Dips / Kabel-Flys",             detail:"3 × 10–15",  setsTotal:3 },
+    { name:"Seitheben Kabel/KH",            detail:"4 × 12–20",  setsTotal:4 },
+    { name:"Schulterdrücken leicht",        detail:"3 × 8–12",   setsTotal:3 },
+    { name:"Trizepsdrücken Seil",           detail:"3 × 10–15",  setsTotal:3 },
+    { name:"Einarm. Overhead-Trizepsstr.",  detail:"2 × 12–15",  setsTotal:2 },
+  ],
+  "Pull B": [
+    { name:"Latzug neutral/eng",            detail:"4 × 8–12",   setsTotal:4 },
+    { name:"Brustgestütztes Rudern",        detail:"4 × 8–12",   setsTotal:4 },
+    { name:"Einarm. Kabelrudern",           detail:"3 × 10–12",  setsTotal:3 },
+    { name:"Pullover Kabel/Maschine",       detail:"3 × 12–15",  setsTotal:3 },
+    { name:"Reverse Pec Deck",              detail:"3 × 12–20",  setsTotal:3 },
+    { name:"Scott Curls / Kabelcurls",      detail:"3 × 10–15",  setsTotal:3 },
+    { name:"Incline DB / Hammercurls",      detail:"3 × 10–15",  setsTotal:3 },
   ],
 }
 
@@ -158,6 +180,8 @@ export default function Home() {
   const [mailSummary, setMailSummary] = useState("")
   const [gymTip, setGymTip]         = useState("")
   const [unreadCount, setUnreadCount] = useState(0)
+  const [mailLoaded, setMailLoaded]   = useState(false)
+  const [mailError, setMailError]     = useState("")
   const [news, setNews]               = useState([])
   const [newsLoading, setNewsLoading] = useState(false)
 
@@ -210,16 +234,27 @@ export default function Home() {
 
   const fetchMail = async () => {
     setAiLoading(l=>({...l,mail:true}))
+    setMailError("")
     try {
-      const d = await fetch("/api/gmail").then(r=>r.json())
-      setEmails(d.messages || [])
-      setUnreadCount((d.messages||[]).filter(m=>m.unread).length)
-      if (d.messages?.length) {
+      const res = await fetch("/api/gmail")
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}))
+        throw new Error(err.error || `HTTP ${res.status}`)
+      }
+      const d = await res.json()
+      if (d.error) throw new Error(d.error)
+      const msgs = d.messages || []
+      setEmails(msgs)
+      setUnreadCount(msgs.filter(m=>m.unread).length)
+      setMailLoaded(true)
+      if (msgs.length) {
         const ad = await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({type:"mail-summary",data:{messages:d.messages}})}).then(r=>r.json())
+          body:JSON.stringify({type:"mail-summary",data:{messages:msgs}})}).then(r=>r.json())
         setMailSummary(ad.text || "")
       }
-    } catch {}
+    } catch(e) {
+      setMailError(e.message || "Fehler beim Laden der Mails")
+    }
     setAiLoading(l=>({...l,mail:false}))
   }
 
@@ -455,7 +490,7 @@ export default function Home() {
                 <div style={{fontSize:12,fontWeight:700,color:A,textTransform:"uppercase",
                   letterSpacing:"0.05em",marginBottom:2}}>{todayType}-Tag</div>
                 <div style={{fontSize:16,fontWeight:700,color:"#211D17"}}>
-                  {todayType==="Rest" ? "Ruhetag" : `${todayType}-Workout`}
+                  {todayType==="Rest" ? "Ruhetag" : `${todayType} Workout`}
                 </div>
                 <div style={{fontSize:12.5,color:"#8B8275",marginTop:1}}>
                   {doneSets>0 ? `${doneSets}/${totalSets} Sätze erledigt` : "Noch nicht gestartet"}
@@ -507,7 +542,7 @@ export default function Home() {
                         border: isToday?"none":gymDone[i]?`1.5px solid ${A}`:"1.5px solid rgba(33,29,23,0.12)",
                         transition:"all .15s ease",
                       }}>
-                        {GYM_PLAN[i].slice(0,2)}
+                        {GYM_SHORT[GYM_PLAN[i]] ?? GYM_PLAN[i].slice(0,2)}
                       </div>
                     </div>
                   )
@@ -645,9 +680,9 @@ export default function Home() {
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:12,fontWeight:700,color:A,textTransform:"uppercase",
-                    letterSpacing:"0.05em",marginBottom:2}}>{todayType}-Tag</div>
+                    letterSpacing:"0.05em",marginBottom:2}}>{todayType}</div>
                   <div style={{fontSize:17,fontWeight:700,color:"#211D17"}}>
-                    {todayType==="Rest" ? "Ruhetag" : `${todayType}-Workout`}
+                    {todayType==="Rest" ? "Ruhetag" : `${todayType} Workout`}
                   </div>
                 </div>
                 <div style={{textAlign:"right"}}>
@@ -858,15 +893,27 @@ export default function Home() {
               )}
             </div>
 
-            {/* KI Summary trigger */}
-            {!mailSummary && !aiLoading.mail && (
+            {/* Error state */}
+            {mailError && (
+              <div style={{...card,background:"#FFF5F5",border:"1px solid rgba(180,0,0,0.1)",
+                display:"flex",alignItems:"flex-start",gap:8}}>
+                <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
+                <div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#B33"}}>Fehler beim Laden</div>
+                  <div style={{fontSize:12,color:"#8B8275",marginTop:2}}>{mailError}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Load button — shows until first successful load */}
+            {!mailLoaded && !aiLoading.mail && (
               <button onClick={fetchMail} style={{
                 ...card,width:"100%",cursor:"pointer",border:"none",
                 display:"flex",alignItems:"center",justifyContent:"center",gap:8,
                 background:A,color:"#FFFFFF",fontSize:15,fontWeight:600,
                 boxShadow:"0 4px 16px rgba(85,122,83,0.35)",marginBottom:18}}>
                 <Icon name="sparkle" size={18} color="#FFFFFF" sw={2}/>
-                Posteingang mit KI zusammenfassen
+                {mailError ? "Erneut versuchen" : "Posteingang mit KI laden"}
               </button>
             )}
 
@@ -877,8 +924,20 @@ export default function Home() {
               </div>
             )}
 
+            {/* Refresh row — shows after successful load */}
+            {mailLoaded && !aiLoading.mail && (
+              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+                <button onClick={fetchMail} style={{background:"none",border:"1px solid rgba(33,29,23,0.08)",
+                  borderRadius:14,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",
+                  gap:4,fontSize:12,color:"#8B8275"}}>
+                  <Icon name="refresh" size={14} color="#8B8275" sw={1.7}/>
+                  Aktualisieren
+                </button>
+              </div>
+            )}
+
             {mailSummary && (
-              <div style={{...card,padding:0,overflow:"hidden"}}>
+              <div style={{...card,padding:0,overflow:"hidden",marginBottom:12}}>
                 <div style={{background:AS,borderBottom:"1px solid rgba(33,29,23,0.08)",
                   padding:"12px 16px",display:"flex",alignItems:"center",gap:6}}>
                   <Icon name="sparkle" size={14} color={A} sw={2}/>
@@ -890,22 +949,10 @@ export default function Home() {
               </div>
             )}
 
-            {/* Refresh row */}
-            {emails.length>0 && (
-              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-                <button onClick={fetchMail} style={{background:"none",border:"1px solid rgba(33,29,23,0.08)",
-                  borderRadius:14,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",
-                  gap:4,fontSize:12,color:"#8B8275"}}>
-                  <Icon name="refresh" size={14} color="#8B8275" sw={1.7}/>
-                  Aktualisieren
-                </button>
-              </div>
-            )}
-
-            {/* No mails state */}
-            {emails.length===0 && !aiLoading.mail && mailSummary==="" && (
+            {/* Empty state after successful load */}
+            {mailLoaded && emails.length===0 && !aiLoading.mail && (
               <div style={{textAlign:"center",padding:"40px 0",color:"#B6AEA0",fontSize:13}}>
-                Klicke oben, um Mails zu laden.
+                Keine Mails im Posteingang.
               </div>
             )}
 
